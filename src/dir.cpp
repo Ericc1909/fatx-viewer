@@ -168,7 +168,7 @@ bool fatDir::saveFile(std::ifstream& img, unsigned int number) {
         }
     }
     
-    std::cout << filename << " is saved to local drive!\n" << std::endl;
+    std::cout << filename << " is saved to a local drive!\n" << std::endl;
     
     file.close();
     
