@@ -1,5 +1,5 @@
-# FATx Viewer (CPP)
-FATx Viewer (CPP) is a port of the FATx Viewer to C++. 
+# FATx Viewer
+Simple viewer for FAT16/FAT32 file systems written in C++. Allows user to browse directories, view their contents and save files to local drive.
 
 ## Helpful resources
 Helpful resources for modifying or building FAT viewer yourself.
