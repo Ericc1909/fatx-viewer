@@ -12,7 +12,7 @@ class fatDir {
         std::string name;
         unsigned int address;
         
-        bool read(std::ifstream& img, unsigned int start);
+        bool read(std::ifstream& img, unsigned int start = 0);
         bool open(std::ifstream& img, unsigned int number);
         bool saveFile(std::ifstream& img, unsigned int start);
         void print();
@@ -22,6 +22,7 @@ class fatDir {
         bool getNextCluster(std::ifstream& img, unsigned int& clusterNum);
         unsigned int clusterToBytes(unsigned int clusterNum);
         std::string nameToString(unsigned int number);
+        bool isEntryAllowed(unsigned char letter, unsigned char attr);
 };
 
 #endif

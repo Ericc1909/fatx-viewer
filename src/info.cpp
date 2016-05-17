@@ -3,7 +3,7 @@
 
 void fatInfo::set(const fatBPB& bpb) {
         root_dir_sectors = ((bpb.root_ent_cnt * 32) + (bpb.byts_per_sec - 1)) 
-                            / bpb.byts_per_sec;
+            / bpb.byts_per_sec;
         
         if ( bpb.fats_z16 ) {
             fats_z = bpb.fats_z16;
@@ -35,14 +35,14 @@ void fatInfo::set(const fatBPB& bpb) {
         }
         
         first_data_sector = bpb.rsvd_sec_cnt + (bpb.num_fats * fats_z)
-                            + root_dir_sectors;
+            + root_dir_sectors;
         
         if ( fat_type == 16 ) {
             first_root_dir_sector = first_data_sector - root_dir_sectors;
         }
         else if ( fat_type == 32 ) {
             first_root_dir_sector = ((bpb.root_clus-2) * bpb.sec_per_clus) 
-                                    + first_data_sector;
+                + first_data_sector;
         }
         
         first_root_dir_bytes = first_root_dir_sector * bpb.byts_per_sec;

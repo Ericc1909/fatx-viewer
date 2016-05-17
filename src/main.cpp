@@ -26,7 +26,9 @@ int main(int argc, char* argv[]) {
             << " in square brackets." << std::endl;
         std::cout << "Enter any non-numeric char for exit.\n" << std::endl;
         
-        dir->read(img, info.first_root_dir_bytes);
+        if ( !dir->read(img) ) {
+            std::cout << "Disk is empty!" << std::endl;
+        }
         dir->print();
         std::cout << "> ";
         

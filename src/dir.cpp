@@ -6,6 +6,10 @@ bool fatDir::read(std::ifstream& img, unsigned int start) {
     fatEntry buf;
     bool canRead = true;
     
+    if ( !start ) {
+        start = clusterToBytes(0);
+    }
+    
     for ( unsigned int i = 0; canRead ; i += sizeof(fatEntry) ) {
         img.seekg(start + i, img.beg);
         img.read((char *) &buf, sizeof(fatEntry));
@@ -13,8 +17,8 @@ bool fatDir::read(std::ifstream& img, unsigned int start) {
         if ( !buf.name[0] ) {
             canRead = false;
         }
-        // no long names for now
-        else if ( buf.attr != 0x0F ) {
+
+        else if ( isEntryAllowed(buf.name[0], buf.attr) ) {
             entries.push_back(buf);
         }
     }
@@ -26,13 +30,51 @@ bool fatDir::read(std::ifstream& img, unsigned int start) {
     return true;
 }
 
+bool fatDir::isEntryAllowed(unsigned char letter, unsigned char attr) {
+    if ( letter < 0x20 && letter != 0x05 ) {
+        return false;
+    }
+    
+    switch ( letter ) {
+        case 0x00:
+        case 0x20:
+        case 0x22:
+        case 0x2A:
+        case 0x2B:
+        case 0x2C:
+        case 0x2F:
+        case 0x3B:
+        case 0x3C:
+        case 0x3D:
+        case 0x3E:
+        case 0x3F:
+        case 0x5B:
+        case 0x5C:
+        case 0x5D:
+        case 0x7C:
+        case 0xE5:
+            return false;
+        default:
+            break;
+    }
+    
+    switch ( attr ) {
+        case 0x02:
+        // long name entries - 0x0F - are not supported yet
+        case 0x0F:
+            return false;
+        default:
+            return true;
+    }
+}
+
 bool fatDir::open(std::ifstream& img, unsigned int number) {
-    if ( number > entries.size() ) {
+    if ( number >= entries.size() ) {
         return false;
     }
     
     for ( size_t i = 0; i < entries.size(); ++i ) {
-        if ( number == i ) {            
+        if ( number == i ) {
             if (entries[i].attr == 0x0010) {
                 unsigned int clusterNum = (entries[i].fst_clus_hi << 16)
                     + entries[i].fst_clus_lo;
@@ -58,7 +100,12 @@ unsigned int fatDir::clusterToBytes(unsigned int clusterNum) {
     unsigned int firstSecBytes = 0;
     
     if ( !clusterNum ) {
-        firstSecBytes = info.first_root_dir_bytes;
+        if ( info.fat_type == 16 ) {
+            firstSecBytes = info.first_root_dir_sector * bpb.byts_per_sec;
+        }
+        else if ( info.fat_type == 32 ) {
+            firstSecBytes = info.first_root_dir_bytes;
+        }
     }
     else {
         firstSecBytes = ((clusterNum - 2) * bpb.sec_per_clus)
@@ -121,6 +168,8 @@ bool fatDir::saveFile(std::ifstream& img, unsigned int number) {
         }
     }
     
+    std::cout << filename << " is saved to local drive!\n" << std::endl;
+    
     file.close();
     
     return true;
@@ -131,6 +180,7 @@ bool fatDir::getNextCluster(std::ifstream& img, unsigned int& clusterNum) {
     unsigned int fatEntOffset = 0;
     unsigned int nextCluster = 0;
     unsigned int fatSecNum = 0;
+    unsigned int lastValidCluster = 0;
     
     if ( info.fat_type == 16 ) {
         fatOffset = clusterNum * 2;
@@ -145,15 +195,17 @@ bool fatDir::getNextCluster(std::ifstream& img, unsigned int& clusterNum) {
     img.seekg(fatSecNum * bpb.byts_per_sec + fatEntOffset, img.beg);
     img.read((char*) &nextCluster, sizeof(nextCluster));
     
-    unsigned int lastValidCluster = 0xFFF8;
-    
-    if (info.fat_type == 32) {
+    if ( info.fat_type == 16 ) {
+        nextCluster = (unsigned short) nextCluster;
+        lastValidCluster = 0xFFF8;
+    }
+    else if ( info.fat_type == 32 ) {
         nextCluster &= 0x0FFFFFFF;
         lastValidCluster = 0x0FFFFFF8;
     }
     
     if ( nextCluster < lastValidCluster ) {
-        if (nextCluster == (lastValidCluster - 1)) {
+        if ( nextCluster == (lastValidCluster - 1) ) {
             // bad cluster
             return false;
         }
