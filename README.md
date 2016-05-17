@@ -1,19 +1,6 @@
-# FATx Viewer
-Simple viewer for FAT16/FAT32 file systems written in C. Allows user to browse directories, view their contents and read text files.
+# FATx Viewer (CPP)
+FATx Viewer (CPP) is a port of the FATx Viewer to C++. 
 
-## Usage
-```
-ls [DIR]
-List the contents of the %DIR% (without arguments lists the contents of working directory)
-```
-```
-cd [DIR]
-Change working directory to the %DIR%
-```
-```
-read [FILE]
-Show contents of the %FILE%
-```
 ## Helpful resources
 Helpful resources for modifying or building FAT viewer yourself.
 
