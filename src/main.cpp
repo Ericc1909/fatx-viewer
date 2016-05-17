@@ -20,12 +20,20 @@ int main(int argc, char* argv[]) {
         
         fatDir* dir = new fatDir;
         unsigned int num = 0;
+        
+        std::cout << "[ FATx Viewer ]" << std::endl;
+        std::cout << "You can browse directories and save files by entering a number" 
+            << " in square brackets." << std::endl;
+        std::cout << "Enter any non-numeric char for exit.\n" << std::endl;
+        
         dir->read(img, info.first_root_dir_bytes);
         dir->print();
-
+        std::cout << "> ";
+        
         while ( std::cin >> num ) {
             dir->open(img, num);
             dir->print();
+            std::cout << "> ";
         }
         
         delete dir;

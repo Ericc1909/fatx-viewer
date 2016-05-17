@@ -3,7 +3,7 @@
 
 void fatBPB::set(std::ifstream& img) {
         img.seekg(11, img.beg);
-        img.read((char*)  &byts_per_sec, sizeof(byts_per_sec));
+        img.read((char*) &byts_per_sec, sizeof(byts_per_sec));
         
         img.seekg(13, img.beg);
         img.read((char*) &sec_per_clus, sizeof(sec_per_clus));
