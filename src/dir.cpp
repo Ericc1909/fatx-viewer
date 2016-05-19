@@ -1,9 +1,11 @@
 #include "main.hpp"
+#include <string.h>
 #include <iostream>
 #include <iomanip>
 
 bool fatDir::read(std::ifstream& img, unsigned int start) {
     fatEntry buf;
+    fatEntryLong bufLong;
     bool canRead = true;
     
     if ( !start ) {
@@ -11,23 +13,57 @@ bool fatDir::read(std::ifstream& img, unsigned int start) {
     }
     
     for ( unsigned int i = 0; canRead ; i += sizeof(fatEntry) ) {
+        // if lastSec (in bytes) == start + i && fat == 16 -> break?
         img.seekg(start + i, img.beg);
         img.read((char *) &buf, sizeof(fatEntry));
         
         if ( !buf.name[0] ) {
             canRead = false;
         }
-
+        else if ( buf.attr == 0x0F ) {
+            memcpy(&bufLong, &buf, sizeof(bufLong));
+            longEntries.insert(longEntries.begin(), bufLong);
+        }
         else if ( isEntryAllowed(buf.name[0], buf.attr) ) {
+            // if long name -> push in long name entries
             entries.push_back(buf);
         }
     }
+    
+    // if nextCluster && fat16 -> read(img, newStart) ?
     
     if ( canRead ) {
         return false;
     }
     
     return true;
+}
+
+/*
+ * chkSum()
+ * Returns an unsigned byte checksum computed on an unsigned byte
+ * array. The array must be 11 bytes long and is assumed to contain
+ * a name stored in the format of a MS-DOS directory entry.
+ * 
+ * Passed: pFcbName
+ * Pointer to an unsigned byte array assumed to be
+ * 
+ * 11 bytes long.
+ * Returns: Sum
+ * 
+ * An 8-bit unsigned checksum of the array pointed
+ * to by pFcbName.
+*/
+
+unsigned char fatDir::checkSum(unsigned char *shortName) {
+    unsigned char sum = 0;
+    
+    for (short length = 11; length != 0; length--) {
+        // NOTE: The operation is an unsigned char rotate right
+        sum = ((sum & 1) ? 0x80 : 0) + (sum >> 1) + *shortName++;
+    }
+    
+    return sum;
 }
 
 bool fatDir::isEntryAllowed(unsigned char letter, unsigned char attr) {
@@ -60,8 +96,6 @@ bool fatDir::isEntryAllowed(unsigned char letter, unsigned char attr) {
     
     switch ( attr ) {
         case 0x02:
-        // long name entries - 0x0F - are not supported yet
-        case 0x0F:
             return false;
         default:
             return true;
@@ -234,20 +268,82 @@ std::string fatDir::nameToString(unsigned int number) {
     return converted;
 }
 
+std::string fatDir::longNameToString(unsigned int number) {
+    std::string converted = "";
+    
+    for ( unsigned int i = 0; i < sizeof(longEntries[number].name_1); ++i ) {
+        if ( longEntries[number].name_1[i] != 255 ) {
+            converted += (char) longEntries[number].name_1[i];
+        }
+    }
+    
+    for ( unsigned int i = 0; i < sizeof(longEntries[number].name_2); ++i ) {
+        if ( longEntries[number].name_2[i] != 255 ) {
+            converted += (char) longEntries[number].name_2[i];
+        }
+    }
+    
+    for ( unsigned int i = 0; i < sizeof(longEntries[number].name_3); ++i ) {
+        if ( longEntries[number].name_3[i] != 255 ) {
+            converted += (char) longEntries[number].name_3[i];
+        }
+    }
+    
+    return converted;
+}
+
+std::string fatDir::getLongName(unsigned int index) {
+    std::string buf = "";
+    unsigned char sum = checkSum(entries[index].name);
+    
+    for ( size_t i = 0; i < longEntries.size(); ++i ) {
+        if ( sum == longEntries[i].chksum ) {
+            if ( longEntries[i].ord == 1 ) {
+                buf = longNameToString(i);
+            }
+            else if ( longEntries[i].ord != 0x40 ) {
+                buf += longNameToString(i);
+            }
+            else {
+                buf += longNameToString(i);
+                break;
+            }
+        }
+    }
+    
+    return buf;
+}
+
+bool fatDir::gotLongName(unsigned int number) {
+    for ( size_t i = 0; i < longEntries.size(); ++i ) {
+        if ( checkSum(entries[number].name) == longEntries[i].chksum ) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 void fatDir::print() {
-    std::string buffer;
+    std::string buffer = "";
     
     for ( size_t i = 0; i < entries.size(); ++i ) {
         std::cout << "[" << i << "] ";
-        std::cout << std::setw(15) << std::left << nameToString(i);
-        
-        // print size if entry is file
-        if ( entries[i].attr != 0x0010 ) {
-            std::cout << " "  << std::right << std::setprecision(2) << std::fixed
-                << std::setw(15) << entries[i].file_size / 1024.0 << " Kb";
+        if ( gotLongName(i) ) {
+            buffer = getLongName(i);
+            std::cout << std::left << buffer;
         }
         else {
-            std::cout << " " << std::right << std::setw(18) << "DIR";
+            buffer = nameToString(i);
+            std::cout << std::left << buffer;
+        }
+        // print size if entry is file
+        if ( entries[i].attr != 0x0010 ) {
+            std::cout << " % " << std::setprecision(2) << std::fixed 
+                << entries[i].file_size / 1024.0 << " Kb";
+        }
+        else {
+            std::cout << " % dir";
         }
         
         std::cout << std::endl;
@@ -257,5 +353,9 @@ void fatDir::print() {
 void fatDir::clear() {
     if ( entries.size() ) {
         entries.clear();
+    }
+    
+    if ( longEntries.size() ) {
+        longEntries.clear();
     }
 }

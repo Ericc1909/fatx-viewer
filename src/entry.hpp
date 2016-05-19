@@ -18,13 +18,13 @@ struct fatEntry {
 
 struct fatEntryLong {
     unsigned char ord;
-    unsigned char name_1[11];
+    unsigned char name_1[10];
     unsigned char attr;
     unsigned char type;
     unsigned char chksum;
-    unsigned char name_2[13];
+    unsigned char name_2[12];
     unsigned short fst_clus_lo;
-    unsigned char name_3[5];
+    unsigned char name_3[4];
 }__attribute__((__packed__));
 
 #endif
