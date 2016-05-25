@@ -8,9 +8,8 @@ struct fatEntry;
 
 class fatDir {
     public:
-        std::vector<fatEntry> entries;
-        std::vector<fatEntryLong> longEntries;
-        std::string name;
+        std::vector<std::pair<fatEntry, std::string> > entries;
+        //std::string name;
         //unsigned int address;
         
         bool read(std::ifstream& img, unsigned int start = 0);
@@ -21,13 +20,10 @@ class fatDir {
         
     protected:
         bool getNextCluster(std::ifstream& img, unsigned int& clusterNum);
-        unsigned int clusterToBytes(unsigned int clusterNum);
-        unsigned char checkSum(unsigned char *shortName);
-        bool gotLongName(unsigned int number);
-        std::string getLongName(unsigned int index);
-        std::string nameToString(unsigned int number);
-        std::string longNameToString(unsigned int number);
         bool isEntryAllowed(unsigned char letter, unsigned char attr);
+        unsigned int clusterToBytes(unsigned int clusterNum);
+        std::string getLongName(const fatEntryLong& longEntry);
+        std::string getName(const fatEntry& entry);
 };
 
 #endif
