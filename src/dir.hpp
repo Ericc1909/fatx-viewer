@@ -9,8 +9,6 @@ struct fatEntry;
 class fatDir {
     public:
         std::vector<std::pair<fatEntry, std::string> > entries;
-        //std::string name;
-        //unsigned int address;
         
         bool read(std::ifstream& img, unsigned int start = 0);
         bool open(std::ifstream& img, unsigned int number);

@@ -6,24 +6,38 @@
 bool fatDir::read(std::ifstream& img, unsigned int start) {
     fatEntry buf;
     fatEntryLong bufLong;
+    
     std::string tmpName = "";
+    
     bool canRead = true;
+    unsigned int rootByts = 0;
+    unsigned int clusterNum = 0;
     
     if ( !start ) {
         start = clusterToBytes(0);
+        
+        if ( info.fat_type == 16 ) { 
+            rootByts = info.root_dir_sectors * bpb.byts_per_sec / 32;
+        }
     }
     
-    for ( unsigned int i = 0; canRead ; i += sizeof(fatEntry) ) {
-        // if lastSec (in bytes) == start + i && fat == 16 -> break?
+    for ( unsigned int i = 0; canRead; i += sizeof(fatEntry) ) {
         img.seekg(start + i, img.beg);
         img.read((char *) &buf, sizeof(fatEntry));
         
-        if ( !buf.name[0] ) {
+        if ( buf.name[0] == 0x00 ) {
+            if ( !rootByts ) {
+                clusterNum = (buf.fst_clus_hi << 16) + buf.fst_clus_lo;
+            }
+            
             canRead = false;
         }
         else if ( buf.attr == 0x0F ) {
-            memcpy(&bufLong, &buf, sizeof(bufLong));
-            tmpName = getLongName(bufLong) + tmpName;
+            memcpy(&bufLong, &buf, sizeof(fatEntry));
+            
+            if ( bufLong.ord != 0x00 && bufLong.ord != 0xE5 ) {
+                tmpName = getLongName(bufLong) + tmpName;
+            }
         }
         else if ( isEntryAllowed(buf.name[0], buf.attr) ) {
             if ( tmpName.length() ) {
@@ -34,12 +48,24 @@ bool fatDir::read(std::ifstream& img, unsigned int start) {
                 entries.push_back( std::make_pair(buf, getName(buf)) );
             }
         }
+        
+        if ( rootByts ) {
+            rootByts -= i;
+            
+            if ( rootByts <= 0 ) {
+                canRead = false;
+            }
+        }
     }
-    
-    // if nextCluster && fat16 -> read(img, newStart) ?
     
     if ( canRead ) {
         return false;
+    }
+    
+    if ( clusterNum ) {
+        if ( getNextCluster(img, clusterNum) ) {
+            read(img, clusterToBytes(clusterNum));
+        }
     }
     
     return true;
@@ -113,12 +139,7 @@ unsigned int fatDir::clusterToBytes(unsigned int clusterNum) {
     unsigned int firstSecBytes = 0;
     
     if ( !clusterNum ) {
-        if ( info.fat_type == 16 ) {
-            firstSecBytes = info.first_root_dir_sector * bpb.byts_per_sec;
-        }
-        else if ( info.fat_type == 32 ) {
-            firstSecBytes = info.first_root_dir_bytes;
-        }
+        firstSecBytes = info.first_root_dir_bytes;
     }
     else {
         firstSecBytes = ((clusterNum - 2) * bpb.sec_per_clus)
@@ -281,7 +302,7 @@ void fatDir::print() {
         
         std::cout << std::left << entries[i].second;
         
-        // print size if entry is file
+        // print size if entry is a file
         if ( entries[i].first.attr != 0x0010 ) {
             std::cout << " % " << std::setprecision(2) << std::fixed 
                 << entries[i].first.file_size / 1024.0 << " Kb";
