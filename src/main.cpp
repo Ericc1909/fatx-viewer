@@ -4,12 +4,18 @@
 fatBPB bpb;
 fatInfo info;
 
-int main(int argc, char* argv[]) {
+int main() {
     std::ifstream img;
-    img.open(argv[1], std::ios::binary);
+    std::string filename;
+    
+    std::cout << "FAT image:\n";
+    std::cin >> filename;
+    
+    img.open(filename, std::ios::binary);
     
     if ( !img ) {
         std::cout << "Error: can't open disk or image." << std::endl;
+        std::cin.get();
         return -1;
     }
     
@@ -42,6 +48,6 @@ int main(int argc, char* argv[]) {
     }
     
     img.close();
-    
-    return 0;   
+    std::cin.get();
+    return 0;
 }

@@ -1,6 +1,7 @@
 #ifndef ENTRY_HPP
 #define ENTRY_HPP
 
+#pragma pack(push,1)
 struct fatEntry {
     unsigned char name[11];
     unsigned char attr;
@@ -14,8 +15,10 @@ struct fatEntry {
     unsigned short wrt_date;
     unsigned short fst_clus_lo;
     unsigned int file_size;
-}__attribute__((__packed__));
+};
+#pragma pack(pop)
 
+#pragma pack(push,1)
 struct fatEntryLong {
     unsigned char ord;
     unsigned char name_1[10];
@@ -25,6 +28,7 @@ struct fatEntryLong {
     unsigned char name_2[12];
     unsigned short fst_clus_lo;
     unsigned char name_3[4];
-}__attribute__((__packed__));
+};
+#pragma pack(pop)
 
 #endif
