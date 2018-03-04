@@ -1,8 +1,8 @@
 # FATx Viewer
-Simple viewer for FAT16/FAT32 file systems written in C++. Allows user to browse directories, view their contents and save files to local drive.
+Simple viewer for FAT16/FAT32 file systems written in C++. It allows users to browse directories, view their contents and save files to a local drive.
 
 ## Helpful resources
-Helpful resources for modifying or building FAT viewer yourself.
+Helpful resources for modifying or building a FAT viewer yourself.
 
 - [Documentation (pdf)](https://staff.washington.edu/dittrich/misc/fatgen103.pdf)
 - [FAT description on OSDev Wiki](http://wiki.osdev.org/FAT)
